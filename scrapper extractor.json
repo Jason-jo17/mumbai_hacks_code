@@ -1,0 +1,563 @@
+{
+  "name": "scrapper extractor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {}
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "64987727-7e31-408c-aef7-705af8aa55fd",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Find and categorize crisis: \"WAR-UKR-20220224\" - Return JSON with query, categorization, and source URLs.",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "# CRISIS DETECTION AGENT - SYSTEM PROMPT\n\nYou are a Crisis Detection and Categorization Agent. Your role is to analyze news articles, reports, and verified sources to identify and categorize real-world crises.\n\n## YOUR TASK\n\nWhen given a news article URL or text, you must:\n1. Determine if it reports on an ACTUAL CRISIS (confirmed event, not speculation)\n2. Categorize the crisis using the predefined taxonomy\n3. Extract verified facts only - ignore rumors, speculation, or unconfirmed claims\n4. Return structured JSON output\n\n---\n\n## CRISIS CATEGORIES\n\n### 1. ARMED CONFLICT\n| Sub-Category | Description | Example |\n|--------------|-------------|---------|\n| War | International armed conflict between nations | Russia-Ukraine War 2022 |\n| Civil War | Internal armed conflict within a nation | Syrian Civil War |\n| Terrorism | Deliberate attacks on civilians | Mumbai Attacks 2008 |\n| Military Coup | Forcible seizure of government | Myanmar Coup 2021 |\n| Border Clash | Armed incidents at borders | India-China Galwan 2020 |\n\n### 2. NATURAL DISASTER\n| Sub-Category | Description | Example |\n|--------------|-------------|---------|\n| Earthquake | Seismic events causing damage | Turkey-Syria 2023 |\n| Flood | Water overflow affecting areas | Pakistan Floods 2022 |\n| Cyclone/Hurricane | Severe tropical storms | Cyclone Amphan 2020 |\n| Tsunami | Ocean waves from seismic activity | Japan 2011 |\n| Wildfire | Uncontrolled fires | Australia Bushfires 2020 |\n| Drought | Extended water scarcity | Horn of Africa 2022 |\n| Volcanic Eruption | Volcanic activity | Tonga Eruption 2022 |\n\n### 3. PUBLIC HEALTH\n| Sub-Category | Description | Example |\n|--------------|-------------|---------|\n| Pandemic | Disease across multiple countries | COVID-19 2020 |\n| Epidemic | Disease outbreak in a region | Ebola West Africa 2014 |\n| Famine | Widespread food scarcity | Yemen Famine 2021 |\n| Contamination | Toxic exposure | Flint Water Crisis |\n\n### 4. INDUSTRIAL/TECHNOLOGICAL\n| Sub-Category | Description | Example |\n|--------------|-------------|---------|\n| Industrial Accident | Factory explosions, spills | Beirut Explosion 2020 |\n| Infrastructure Collapse | Bridge, building, dam failures | Morbi Bridge 2022 |\n| Transportation Disaster | Plane crashes, derailments | Ethiopian Airlines 2019 |\n| Nuclear Incident | Radiation leaks | Fukushima 2011 |\n\n### 5. HUMANITARIAN\n| Sub-Category | Description | Example |\n|--------------|-------------|---------|\n| Refugee Crisis | Mass displacement | Syrian Refugee Crisis |\n| Genocide | Systematic targeting of groups | Rohingya Crisis |\n| Mass Displacement | Forced migration | Ukraine Displacement 2022 |\n\n### 6. ECONOMIC\n| Sub-Category | Description | Example |\n|--------------|-------------|---------|\n| Financial Crisis | Market crashes, currency collapse | Sri Lanka 2022 |\n| Supply Chain Collapse | Critical shortages | Global Chip Shortage 2021 |\n\n### 7. POLITICAL\n| Sub-Category | Description | Example |\n|--------------|-------------|---------|\n| Civil Unrest | Large-scale protests, riots | Hong Kong Protests 2019 |\n| Government Collapse | State failure | Afghanistan 2021 |\n| Election Crisis | Disputed elections | Belarus 2020 |\n\n---\n\n## SEVERITY LEVELS\n\n| Level | Criteria |\n|-------|----------|\n| **CRITICAL** | Mass casualties (1000+), national/international impact, immediate response needed |\n| **HIGH** | Significant casualties (100-1000), regional impact, urgent response |\n| **MEDIUM** | Limited casualties (10-100), local impact, response ongoing |\n| **LOW** | Minimal casualties (<10), localized, situation contained |\n\n---\n\n## CONFIRMATION STATUS\n\n| Status | Criteria |\n|--------|----------|\n| **CONFIRMED** | Verified by official sources (government, UN, major news agencies like Reuters, AP, AFP) |\n| **LIKELY** | Multiple credible reports but not officially confirmed |\n| **UNCONFIRMED** | Single source or unverified - DO NOT INCLUDE IN OUTPUT |\n\n---\n\n## RULES\n\n1. ✅ ONLY include CONFIRMED or LIKELY events\n2. ❌ NEVER include speculation, rumors, or predictions\n3. ✅ Extract specific numbers when available (casualties, affected population)\n4. ✅ Include geographic coordinates when possible\n5. ✅ Cite sources for all claims\n6. ✅ If article discusses misinformation ABOUT a crisis, focus on the underlying real crisis\n7. ✅ If no real crisis is detected, return `crisis_detected: false`\n\n---\n\n## OUTPUT REQUIREMENTS\n\nAlways return valid JSON matching the output schema. Include:\n- The search query used\n- Crisis categorization (if detected)\n- All associated source URLs with credibility ratings\n- Confidence score for the analysis"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        800,
+        0
+      ],
+      "id": "e67b8951-f3fa-4ffd-9c4f-5d9333c8f9c2",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        224,
+        224
+      ],
+      "id": "73c5e440-0cb9-4b2b-b41c-196f5127d306",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "plEKgBkPq9pmxgq3",
+          "name": "jason jo"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"$schema\": \"http://json-schema.org/draft-07/schema#\",\n  \"title\": \"Crisis Detection Output\",\n  \"description\": \"Structured output from the Crisis Detection Agent containing search query, crisis categorization, and source URLs\",\n  \"type\": \"object\",\n  \"required\": [\"search_query\", \"crisis_detected\", \"sources\", \"processed_at\"],\n  \"properties\": {\n    \"search_query\": {\n      \"type\": \"string\",\n      \"description\": \"The search query used or recommended for finding information about this crisis\",\n      \"examples\": [\"Turkey Syria earthquake February 2023\", \"Ukraine war latest casualties\", \"Cyclone Michaung Chennai\"]\n    },\n    \"crisis_detected\": {\n      \"type\": \"boolean\",\n      \"description\": \"Whether a confirmed/likely crisis was detected in the content\"\n    },\n    \"crisis_data\": {\n      \"type\": [\"object\", \"null\"],\n      \"description\": \"Crisis details if detected, null otherwise\",\n      \"properties\": {\n        \"crisis_id\": {\n          \"type\": \"string\",\n          \"pattern\": \"^[A-Z]+-[A-Z]{2,3}-\\\\d{8}$\",\n          \"description\": \"Unique ID format: TYPE-COUNTRYCODE-YYYYMMDD\",\n          \"examples\": [\"EARTHQUAKE-TUR-20230206\", \"WAR-UKR-20220224\", \"CYCLONE-IND-20231204\"]\n        },\n        \"title\": {\n          \"type\": \"string\",\n          \"description\": \"Brief descriptive title\",\n          \"examples\": [\"2023 Turkey-Syria Earthquake\", \"Russia-Ukraine War\", \"Cyclone Michaung\"]\n        },\n        \"category\": {\n          \"type\": \"object\",\n          \"required\": [\"primary\", \"sub_category\"],\n          \"properties\": {\n            \"primary\": {\n              \"type\": \"string\",\n              \"enum\": [\n                \"Armed Conflict\",\n                \"Natural Disaster\",\n                \"Public Health\",\n                \"Industrial/Technological\",\n                \"Humanitarian\",\n                \"Economic\",\n                \"Political\"\n              ]\n            },\n            \"sub_category\": {\n              \"type\": \"string\",\n              \"enum\": [\n                \"War\", \"Civil War\", \"Terrorism\", \"Military Coup\", \"Border Clash\", \"Insurgency\",\n                \"Earthquake\", \"Flood\", \"Cyclone/Hurricane/Typhoon\", \"Tsunami\", \"Wildfire\", \"Drought\", \"Volcanic Eruption\", \"Landslide\", \"Tornado\", \"Heatwave\",\n                \"Pandemic\", \"Epidemic\", \"Famine\", \"Contamination\", \"Disease Outbreak\",\n                \"Industrial Accident\", \"Infrastructure Collapse\", \"Transportation Disaster\", \"Nuclear Incident\", \"Cyberattack\", \"Dam Failure\",\n                \"Refugee Crisis\", \"Genocide\", \"Ethnic Cleansing\", \"Mass Displacement\", \"Human Rights Crisis\",\n                \"Financial Crisis\", \"Currency Collapse\", \"Supply Chain Collapse\", \"Hyperinflation\",\n                \"Civil Unrest\", \"Government Collapse\", \"Election Crisis\", \"Mass Protests\", \"Revolution\"\n              ]\n            }\n          }\n        },\n        \"status\": {\n          \"type\": \"string\",\n          \"enum\": [\"CONFIRMED\", \"LIKELY\"],\n          \"description\": \"Verification status - only CONFIRMED or LIKELY events are included\"\n        },\n        \"severity\": {\n          \"type\": \"string\",\n          \"enum\": [\"CRITICAL\", \"HIGH\", \"MEDIUM\", \"LOW\"],\n          \"description\": \"Impact severity level\"\n        },\n        \"location\": {\n          \"type\": \"object\",\n          \"required\": [\"country\"],\n          \"properties\": {\n            \"country\": {\n              \"type\": \"string\",\n              \"description\": \"Primary country affected\"\n            },\n            \"country_code\": {\n              \"type\": \"string\",\n              \"pattern\": \"^[A-Z]{2,3}$\",\n              \"description\": \"ISO country code\"\n            },\n            \"region\": {\n              \"type\": \"string\",\n              \"description\": \"Region or state within country\"\n            },\n            \"city\": {\n              \"type\": \"string\",\n              \"description\": \"Specific city if applicable\"\n            },\n            \"coordinates\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"latitude\": {\"type\": \"number\", \"minimum\": -90, \"maximum\": 90},\n                \"longitude\": {\"type\": \"number\", \"minimum\": -180, \"maximum\": 180}\n              }\n            },\n            \"affected_areas\": {\n              \"type\": \"array\",\n              \"items\": {\"type\": \"string\"},\n              \"description\": \"List of specific affected areas\"\n            }\n          }\n        },\n        \"timeline\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"start_date\": {\n              \"type\": \"string\",\n              \"format\": \"date\",\n              \"description\": \"Crisis start date (YYYY-MM-DD)\"\n            },\n            \"end_date\": {\n              \"type\": [\"string\", \"null\"],\n              \"format\": \"date\",\n              \"description\": \"Crisis end date if resolved, null if ongoing\"\n            },\n            \"current_phase\": {\n              \"type\": \"string\",\n              \"enum\": [\"Emerging\", \"Escalating\", \"Peak\", \"Stabilizing\", \"Declining\", \"Resolved\"]\n            },\n            \"duration_days\": {\n              \"type\": \"integer\",\n              \"description\": \"Number of days since crisis started\"\n            }\n          }\n        },\n        \"impact\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"casualties\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"deaths_confirmed\": {\"type\": \"integer\", \"minimum\": 0},\n                \"deaths_estimated\": {\"type\": \"integer\", \"minimum\": 0},\n                \"injured\": {\"type\": \"integer\", \"minimum\": 0},\n                \"missing\": {\"type\": \"integer\", \"minimum\": 0}\n              }\n            },\n            \"displacement\": {\n              \"type\": \"object\",\n              \"properties\": {\n                \"internally_displaced\": {\"type\": \"integer\", \"minimum\": 0},\n                \"refugees\": {\"type\": \"integer\", \"minimum\": 0},\n                \"evacuated\": {\"type\": \"integer\", \"minimum\": 0}\n              }\n            },\n            \"affected_population\": {\n              \"type\": \"integer\",\n              \"description\": \"Total people affected\"\n            },\n            \"infrastructure_damage\": {\n              \"type\": \"string\"\n            },\n            \"economic_impact_usd\": {\n              \"type\": \"string\",\n              \"description\": \"Estimated economic damage\"\n            }\n          }\n        },\n        \"response\": {\n          \"type\": \"object\",\n          \"properties\": {\n            \"emergency_declared\": {\"type\": \"boolean\"},\n            \"government_response\": {\"type\": \"string\"},\n            \"international_response\": {\"type\": \"string\"},\n            \"humanitarian_organizations\": {\n              \"type\": \"array\",\n              \"items\": {\"type\": \"string\"}\n            }\n          }\n        },\n        \"keywords\": {\n          \"type\": \"array\",\n          \"items\": {\"type\": \"string\"},\n          \"description\": \"Keywords for monitoring this crisis\"\n        }\n      }\n    },\n    \"sources\": {\n      \"type\": \"array\",\n      \"description\": \"All source URLs with metadata\",\n      \"items\": {\n        \"type\": \"object\",\n        \"required\": [\"url\", \"source_name\", \"credibility\"],\n        \"properties\": {\n          \"url\": {\n            \"type\": \"string\",\n            \"format\": \"uri\"\n          },\n          \"title\": {\n            \"type\": \"string\"\n          },\n          \"source_name\": {\n            \"type\": \"string\",\n            \"examples\": [\"Reuters\", \"BBC\", \"UN OCHA\", \"WHO\", \"AP News\"]\n          },\n          \"source_type\": {\n            \"type\": \"string\",\n            \"enum\": [\n              \"Official Government\",\n              \"UN Agency\",\n              \"Major News Agency\",\n              \"Local News\",\n              \"NGO\",\n              \"Academic/Research\",\n              \"Other\"\n            ]\n          },\n          \"published_date\": {\n            \"type\": \"string\",\n            \"format\": \"date-time\"\n          },\n          \"credibility\": {\n            \"type\": \"string\",\n            \"enum\": [\"HIGH\", \"MEDIUM\", \"LOW\"]\n          },\n          \"key_facts_from_source\": {\n            \"type\": \"array\",\n            \"items\": {\"type\": \"string\"},\n            \"description\": \"Key verified facts extracted from this source\"\n          }\n        }\n      }\n    },\n    \"processed_at\": {\n      \"type\": \"string\",\n      \"format\": \"date-time\",\n      \"description\": \"Timestamp when this analysis was performed\"\n    },\n    \"confidence_score\": {\n      \"type\": \"number\",\n      \"minimum\": 0,\n      \"maximum\": 1,\n      \"description\": \"Overall confidence in the crisis detection and categorization\"\n    },\n    \"notes\": {\n      \"type\": \"string\",\n      \"description\": \"Additional notes or caveats about the analysis\"\n    }\n  }\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1504,
+        224
+      ],
+      "id": "d26a2488-f610-475d-ad49-2ba51cbca8e2",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Crisis_Categories",
+          "mode": "list",
+          "cachedResultName": "Crisis_Categories",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        352,
+        224
+      ],
+      "id": "c0817405-f75f-4f29-b01e-d5237ecb47ab",
+      "name": "Read Crisis Categories",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Agent1_Classifications",
+          "mode": "list",
+          "cachedResultName": "Agent1_Classifications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=1"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        480,
+        224
+      ],
+      "id": "6a145231-c3ba-44c7-93ed-8777596dde6a",
+      "name": "Read Agent1 Classifications",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Agent1_Classifications",
+          "mode": "list",
+          "cachedResultName": "Agent1_Classifications",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=1"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        608,
+        224
+      ],
+      "id": "9133952a-60aa-4b6f-b23a-8eb671d013f1",
+      "name": "Write Agent1 Classification",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Agent2_Queries",
+          "mode": "list",
+          "cachedResultName": "Agent2_Queries",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=2"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        736,
+        224
+      ],
+      "id": "5ae4fdec-0c5d-4316-b204-c48f4cc69565",
+      "name": "Read Agent2 Queries",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Agent2_Queries",
+          "mode": "list",
+          "cachedResultName": "Agent2_Queries",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=2"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        864,
+        224
+      ],
+      "id": "52cf8f70-dcce-459b-b827-78dd57c3c301",
+      "name": "Write Agent2 Queries",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 149132101,
+          "mode": "list",
+          "cachedResultName": "Agent3_Master",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=149132101"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        992,
+        224
+      ],
+      "id": "7ef80afe-d09d-40fa-bbf2-326da0a94f19",
+      "name": "Read Agent3 Master",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 149132101,
+          "mode": "list",
+          "cachedResultName": "Agent3_Master",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=149132101"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1120,
+        224
+      ],
+      "id": "7ff8231f-001f-47a3-b5c2-e334ad2c6bbb",
+      "name": "Write Agent3 Master",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Processed_URLs",
+          "mode": "list",
+          "cachedResultName": "Processed_URLs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=4"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1248,
+        224
+      ],
+      "id": "7cb5a8a0-8d30-4ea8-a195-7f1099b96227",
+      "name": "Read Processed URLs",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE",
+          "mode": "list",
+          "cachedResultName": "Google Sheets Structure",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "Processed_URLs",
+          "mode": "list",
+          "cachedResultName": "Processed_URLs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mVutSzH9Ch1GKh4zvbttOFwFvwuX385gg9R5RTmfkIE/edit#gid=4"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {}
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.7,
+      "position": [
+        1376,
+        224
+      ],
+      "id": "0e3bdc51-b378-466e-861b-398d67dc9c0c",
+      "name": "Write Processed URL",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "OjcSC0u8s1GfFklj",
+          "name": "jasonnew"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://6699253ec8f2.ngrok-free.app",
+        "options": {
+          "timeout": 1000000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1712,
+        0
+      ],
+      "id": "d49e4342-a4ac-4d7b-8418-e587fd095b27",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Crisis Categories": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Agent1 Classifications": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Agent1 Classification": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Agent2 Queries": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Agent2 Queries": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Agent3 Master": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Agent3 Master": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Processed URLs": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Write Processed URL": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2a6d970f-0624-420c-8eb2-00bdda70cb7a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "20fa5096a0ba22a5b267ee86cbd978b19a5b24c62dd492bc695bf60def68f04e"
+  },
+  "id": "by4G3k0VaKe81inj",
+  "tags": []
+}
